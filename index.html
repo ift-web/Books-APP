@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>以書會友</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f0e8;--bg2:#ede8de;--bg3:#e6dfd3;
+  --card:#faf7f2;--card2:#f0ebe2;
+  --ink:#2c2416;--ink2:#5a4f3e;--ink3:#8c7d68;
+  --accent:#7a5c3a;--accent2:#b08b5a;--accent3:#d4b896;
+  --sage:#6b7c5a;--rose:#a0706a;--sky:#5a7080;
+  --border:#ddd5c5;--border2:#c8bfb0;
+}
+body{background:#e8e2d8;font-family:'Noto Serif TC',Georgia,serif;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:20px 10px 40px}
+.phone{width:100%;max-width:390px;background:var(--bg);border-radius:36px;overflow:hidden;box-shadow:0 24px 60px #2c241640,0 4px 12px #2c241620;position:relative;min-height:800px;display:flex;flex-direction:column;border:1px solid var(--border)}
+
+/* Status */
+.statusbar{background:var(--bg2);padding:10px 22px 5px;display:flex;justify-content:space-between;font-size:.65rem;color:var(--ink3);letter-spacing:.04em;border-bottom:1px solid var(--border)}
+
+/* Header */
+.header{padding:12px 20px 10px;display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-bottom:1px solid var(--border)}
+.header-title{font-size:1rem;font-weight:700;color:var(--ink);letter-spacing:.06em}
+.header-icons{display:flex;gap:16px;color:var(--ink2)}
+.header-icons span{cursor:pointer;font-size:.9rem;opacity:.7;transition:opacity .15s}
+.header-icons span:hover{opacity:1}
+.notif-dot{position:relative}
+.notif-dot::after{content:'';position:absolute;top:-1px;right:-2px;width:6px;height:6px;background:var(--rose);border-radius:50%;border:1.5px solid var(--bg)}
+
+/* Screens */
+.screen{display:none;flex:1;overflow-y:auto;padding-bottom:72px}
+.screen.active{display:block;animation:rise .3s ease}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Bottom nav */
+.bottomnav{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0 12px;z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;opacity:.35;transition:opacity .15s;flex:1}
+.nav-item.active{opacity:1}
+.nav-item .ni{font-size:1.15rem;line-height:1}
+.nav-item .nl{font-size:.58rem;color:var(--ink3);font-weight:600;letter-spacing:.04em}
+.nav-item.active .nl{color:var(--accent)}
+
+/* Section label */
+.sec-label{padding:14px 20px 6px;font-size:.68rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;display:flex;align-items:center;gap:6px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Cards scroll */
+.hscroll{display:flex;gap:12px;padding:0 20px 16px;overflow-x:auto;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* Match card */
+.match-card{min-width:148px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:15px 13px;cursor:pointer;transition:transform .15s,box-shadow .15s;flex-shrink:0}
+.match-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px #2c241615}
+.mc-avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:9px;border:2px solid var(--border2)}
+.mc-name{font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:2px}
+.mc-books{font-size:.68rem;color:var(--ink3);line-height:1.4}
+.mc-pct{display:inline-block;margin-top:7px;background:var(--accent);color:#faf7f2;font-size:.65rem;font-weight:700;padding:2px 9px;border-radius:20px;letter-spacing:.04em}
+
+/* Nearby row */
+.nearby-row{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border);cursor:pointer}
+.nb-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;border:1.5px solid var(--border2);background:var(--card2)}
+.nb-name{font-size:.85rem;font-weight:600;color:var(--ink)}
+.nb-sub{font-size:.7rem;color:var(--ink3);margin-top:2px;font-style:italic}
+.nb-dist{font-size:.68rem;color:var(--accent);font-weight:700;white-space:nowrap}
+.ping-btn{background:var(--accent);color:#faf7f2;border:none;border-radius:8px;padding:5px 12px;font-size:.7rem;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:background .15s}
+.ping-btn:hover{background:var(--ink)}
+.ping-btn.ghost{background:transparent;color:var(--ink2);border:1px solid var(--border2)}
+.ping-btn.ghost:hover{background:var(--card2);border-color:var(--accent)}
+
+/* ── SHELF ── */
+.shelf-tabs{display:flex;gap:6px;padding:12px 20px 6px;overflow-x:auto;scrollbar-width:none}
+.shelf-tabs::-webkit-scrollbar{display:none}
+.stab{background:transparent;border:1.5px solid var(--border2);border-radius:20px;padding:5px 14px;font-size:.75rem;color:var(--ink3);cursor:pointer;font-weight:600;font-family:inherit;transition:all .15s;white-space:nowrap}
+.stab.active{background:var(--accent);color:#faf7f2;border-color:var(--accent)}
+.book-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px 20px}
+.book-item{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .15s}
+.book-item:hover{transform:scale(1.03)}
+.book-cover{height:88px;display:flex;align-items:center;justify-content:center;font-size:1.7rem}
+.book-meta{padding:7px 9px 9px;border-top:1px solid var(--border)}
+.book-title{font-size:.72rem;font-weight:700;color:var(--ink);line-height:1.3}
+.book-author{font-size:.63rem;color:var(--ink3);margin-top:2px;font-style:italic}
+.book-status{display:inline-block;margin-top:4px;font-size:.6rem;padding:1px 6px;border-radius:10px;font-weight:700;letter-spacing:.04em}
+.s-read{background:#e8f0e4;color:var(--sage)}
+.s-reading{background:#f0e8de;color:var(--accent)}
+.s-want{background:#e4eaf0;color:var(--sky)}
+
+/* ── FLOAT ── */
+.float-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin:0 20px 12px;display:flex;gap:12px;align-items:flex-start}
+.fb-icon{width:46px;height:62px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;background:var(--card2);border:1px solid var(--border)}
+.fb-name{font-size:.88rem;font-weight:700;color:var(--ink)}
+.fb-owner{font-size:.72rem;color:var(--ink3);margin-top:2px;font-style:italic}
+.fb-dist{font-size:.68rem;color:var(--accent);margin-top:4px;font-weight:700}
+.fb-actions{display:flex;gap:6px;margin-top:8px}
+.btn-borrow{background:var(--accent);color:#faf7f2;border:none;border-radius:8px;padding:5px 12px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-swap{background:transparent;color:var(--ink2);border:1.5px solid var(--border2);border-radius:8px;padding:5px 12px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* ── DISCUSS ── */
+.disc-banner{margin:12px 20px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;display:flex;gap:13px;align-items:center}
+.disc-cover{width:46px;height:62px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.7rem;background:var(--card2);border:1px solid var(--border);flex-shrink:0}
+.disc-title{font-size:.92rem;font-weight:700;color:var(--ink)}
+.disc-sub{font-size:.7rem;color:var(--ink3);margin-top:3px;font-style:italic}
+.anon-badge{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border:1px solid var(--border2);border-radius:20px;padding:3px 10px;font-size:.68rem;color:var(--accent);margin-top:6px;font-weight:600}
+.chapter-tabs{display:flex;gap:7px;padding:4px 20px 10px;overflow-x:auto;scrollbar-width:none}
+.chapter-tabs::-webkit-scrollbar{display:none}
+.ctab{background:transparent;border:1.5px solid var(--border2);border-radius:20px;padding:4px 13px;font-size:.73rem;color:var(--ink3);cursor:pointer;white-space:nowrap;font-weight:600;font-family:inherit;transition:all .15s}
+.ctab.active{background:var(--accent);color:#faf7f2;border-color:var(--accent)}
+.comment-item{padding:13px 20px;border-bottom:1px solid var(--border)}
+.c-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.c-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;background:var(--card2);border:1px solid var(--border);flex-shrink:0}
+.c-name{font-size:.78rem;font-weight:700;color:var(--ink);font-style:italic}
+.c-time{font-size:.65rem;color:var(--ink3);margin-left:auto}
+.c-text{font-size:.83rem;color:var(--ink2);line-height:1.7}
+.c-acts{display:flex;gap:14px;margin-top:7px}
+.c-act{font-size:.7rem;color:var(--ink3);cursor:pointer;display:flex;align-items:center;gap:3px;transition:color .15s}
+.c-act:hover{color:var(--accent)}
+.spoiler-tag{display:inline-block;background:#f0e4e4;color:var(--rose);font-size:.63rem;padding:1px 8px;border-radius:10px;margin-bottom:5px;font-weight:700;letter-spacing:.04em}
+
+/* ── MARATHON ── */
+.marathon-hero{margin:12px 20px;background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:17px}
+.mh-label{font-size:.68rem;color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.mh-book{font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:11px}
+.mh-prow{display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink3);margin-bottom:4px;font-style:italic}
+.mh-track{background:var(--bg3);border-radius:99px;height:6px;overflow:hidden}
+.mh-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.mh-dead{font-size:.68rem;color:var(--ink3);margin-top:5px;font-style:italic}
+.mh-mems{display:flex;align-items:center;gap:8px;margin-top:11px}
+.mh-av{width:30px;height:30px;border-radius:50%;background:var(--card2);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:.82rem;margin-left:-6px}
+.mh-av:first-child{margin-left:0}
+.mh-mname{font-size:.7rem;color:var(--ink3);font-style:italic}
+.mh-cta{background:var(--accent);color:#faf7f2;border:none;border-radius:10px;padding:9px;font-size:.82rem;font-weight:700;cursor:pointer;width:100%;margin-top:13px;font-family:inherit;letter-spacing:.04em;transition:background .15s}
+.mh-cta:hover{background:var(--ink)}
+.room-card{margin:0 20px 10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px;cursor:pointer}
+.room-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.room-name{font-size:.85rem;font-weight:700;color:var(--ink)}
+.room-live{background:var(--rose);color:#faf7f2;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.04em}
+.room-book{font-size:.72rem;color:var(--ink3);margin-bottom:8px;font-style:italic}
+.rm{width:26px;height:26px;border-radius:50%;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.72rem}
+.join-btn{background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:4px 12px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* ── PROFILE ── */
+.prof-top{padding:22px 20px 14px;text-align:center;background:var(--bg2);border-bottom:1px solid var(--border)}
+.prof-av{width:72px;height:72px;border-radius:50%;background:var(--card2);border:2.5px solid var(--accent2);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 10px}
+.prof-name{font-size:1.05rem;font-weight:700;color:var(--ink)}
+.prof-bio{font-size:.75rem;color:var(--ink3);margin-top:5px;line-height:1.6;font-style:italic}
+.prof-stats{display:flex;border-bottom:1px solid var(--border)}
+.pstat{flex:1;padding:12px 0;text-align:center;border-right:1px solid var(--border)}
+.pstat:last-child{border-right:none}
+.pstat-num{font-size:1.1rem;font-weight:700;color:var(--accent)}
+.pstat-label{font-size:.62rem;color:var(--ink3);margin-top:2px;letter-spacing:.04em}
+.prof-sec{padding:14px 20px 6px;font-size:.65rem;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em}
+.pref-tags{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 14px}
+.ptag{background:var(--card2);color:var(--accent);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid var(--border);cursor:pointer}
+.sr-left{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--ink2)}
+.sr-icon{font-size:.95rem;width:22px;text-align:center;color:var(--accent2)}
+.toggle{width:36px;height:20px;background:var(--border2);border-radius:99px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#faf7f2;border-radius:50%;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px #0002}
+.toggle.on::after{left:19px}
+
+/* Search */
+.search-wrap{padding:12px 20px 8px}
+.search-box{background:var(--card);border:1.5px solid var(--border2);border-radius:12px;padding:9px 14px;display:flex;align-items:center;gap:8px}
+.search-box input{background:none;border:none;outline:none;color:var(--ink);flex:1;font-size:.85rem;font-family:inherit}
+.search-box input::placeholder{color:var(--ink3)}
+
+/* Divider */
+.hdiv{height:1px;background:var(--border);margin:4px 20px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>◈ ▪▪▪ ▣</span></div>
+
+  <div class="header">
+    <div class="header-title" id="headerTitle">以書會友</div>
+    <div class="header-icons">
+      <span class="notif-dot" onclick="showToast('你有 3 則新訊息')">◎</span>
+      <span onclick="showToast('搜尋書友或書籍')">⊕</span>
+    </div>
+  </div>
+
+  <!-- ══ DISCOVER ══ -->
+  <div class="screen active" id="s-discover">
+    <div class="search-wrap">
+      <div class="search-box">
+        <span style="color:var(--ink3);font-size:.85rem">⊘</span>
+        <input type="text" placeholder="搜尋書名、作者、書友…">
+      </div>
+    </div>
+
+    <div class="sec-label">靈魂書友配對</div>
+    <div class="hscroll">
+      <div class="match-card" onclick="showToast('已向 書蟲小葉 遞出書籤 🔖')">
+        <div class="mc-avatar" style="background:#eee8dc">🕯</div>
+        <div class="mc-name">書蟲小葉</div>
+        <div class="mc-books">《人類大命運》《思考，快與慢》</div>
+        <span class="mc-pct">書緣 87%</span>
+      </div>
+      <div class="match-card" onclick="showToast('已向 哲學系阿涵 遞出書籤 🔖')">
+        <div class="mc-avatar" style="background:#e8e0ec">🪶</div>
+        <div class="mc-name">哲學系阿涵</div>
+        <div class="mc-books">《存在與虛無》《挪威的森林》</div>
+        <span class="mc-pct">書緣 79%</span>
+      </div>
+      <div class="match-card" onclick="showToast('已向 理工讀書人 遞出書籤 🔖')">
+        <div class="mc-avatar" style="background:#dce8e4">🔭</div>
+        <div class="mc-name">理工讀書人</div>
+        <div class="mc-books">《費曼物理學》《宇宙的構造》</div>
+        <span class="mc-pct">書緣 73%</span>
+      </div>
+      <div class="match-card" onclick="showToast('已向 輕小說控 遞出書籤 🔖')">
+        <div class="mc-avatar" style="background:#e8dce8">🌙</div>
+        <div class="mc-name">輕小說控</div>
+        <div class="mc-books">《Re:Zero》《魔法少女小圓》</div>
+        <span class="mc-pct">書緣 68%</span>
+      </div>
+    </div>
+
+    <div class="sec-label">附近的讀者</div>
+    <div class="nearby-row">
+      <div class="nb-avatar">🌿</div>
+      <div style="flex:1"><div class="nb-name">安安讀書中</div><div class="nb-sub">正讀《原子習慣》</div></div>
+      <span class="nb-dist">230m</span>
+      <button class="ping-btn" onclick="showToast('已輕輕招呼 ✦')">招呼</button>
+    </div>
+    <div class="nearby-row">
+      <div class="nb-avatar">🍃</div>
+      <div style="flex:1"><div class="nb-name">山野書客</div><div class="nb-sub">正讀《瓦爾登湖》</div></div>
+      <span class="nb-dist">410m</span>
+      <button class="ping-btn" onclick="showToast('已輕輕招呼 ✦')">招呼</button>
+    </div>
+    <div class="nearby-row">
+      <div class="nb-avatar">☕</div>
+      <div style="flex:1"><div class="nb-name">文青咖啡控</div><div class="nb-sub">正讀《卡夫卡的海邊》</div></div>
+      <span class="nb-dist">490m</span>
+      <button class="ping-btn" onclick="showToast('已輕輕招呼 ✦')">招呼</button>
+    </div>
+  </div>
+
+  <!-- ══ SHELF ══ -->
+  <div class="screen" id="s-shelf">
+    <div style="padding:14px 20px 0;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.95rem;font-weight:700;color:var(--ink)">我的書房</span>
+      <span style="font-size:1rem;cursor:pointer;color:var(--accent)" onclick="showToast('新增書籍')">⊕</span>
+    </div>
+    <div class="shelf-tabs">
+      <button class="stab active" onclick="switchStab(this)">全部 12</button>
+      <button class="stab" onclick="switchStab(this)">已讀 7</button>
+      <button class="stab" onclick="switchStab(this)">在讀 3</button>
+      <button class="stab" onclick="switchStab(this)">想讀 2</button>
+    </div>
+    <div class="book-grid">
+      <div class="book-item"><div class="book-cover" style="background:#e4edd8">🌱</div><div class="book-meta"><div class="book-title">原子習慣</div><div class="book-author">James Clear</div><span class="book-status s-read">已讀</span></div></div>
+      <div class="book-item"><div class="book-cover" style="background:#e8e0d0">🧠</div><div class="book-meta"><div class="book-title">思考，快與慢</div><div class="book-author">康納曼</div><span class="book-status s-read">已讀</span></div></div>
+      <div class="book-item"><div class="book-cover" style="background:#e4dce8">🌊</div><div class="book-meta"><div class="book-title">挪威的森林</div><div class="book-author">村上春樹</div><span class="book-status s-reading">讀中</span></div></div>
+      <div class="book-item"><div class="book-cover" style="background:#dce4e8">🔭</div><div class="book-meta"><div class="book-title">人類大命運</div><div class="book-author">哈拉瑞</div><span class="book-status s-reading">讀中</span></div></div>
+      <div class="book-item"><div class="book-cover" style="background:#ede4d4">🪙</div><div class="book-meta"><div class="book-title">富爸爸窮爸爸</div><div class="book-author">清崎</div><span class="book-status s-read">已讀</span></div></div>
+      <div class="book-item"><div class="book-cover" style="background:#dce4ec">🪐</div><div class="book-meta"><div class="book-title">宇宙的構造</div><div class="book-author">格林</div><span class="book-status s-want">想讀</span></div></div>
+    </div>
+    <div class="sec-label">書友的書房</div>
+    <div class="nearby-row">
+      <div class="nb-avatar" style="font-size:.72rem;font-weight:700;color:var(--ink2)">小葉</div>
+      <div style="flex:1"><div class="nb-name" style="font-size:.82rem">共同藏書 5 本</div><div class="nb-sub">最新：《被討厭的勇氣》</div></div>
+      <button class="ping-btn ghost" onclick="showToast('查看書友書房')">查看</button>
+    </div>
+    <div class="nearby-row">
+      <div class="nb-avatar" style="font-size:.72rem;font-weight:700;color:var(--ink2)">阿涵</div>
+      <div style="flex:1"><div class="nb-name" style="font-size:.82rem">共同藏書 3 本</div><div class="nb-sub">最新：《存在主義咖啡館》</div></div>
+      <button class="ping-btn ghost" onclick="showToast('查看書友書房')">查看</button>
+    </div>
+  </div>
+
+  <!-- ══ FLOAT ══ -->
+  <div class="screen" id="s-float">
+    <div class="sec-label" style="padding-top:16px">附近漂書</div>
+    <div class="float-card">
+      <div class="fb-icon">🌱</div>
+      <div style="flex:1">
+        <div class="fb-name">原子習慣</div>
+        <div class="fb-owner">書友：安安讀書中</div>
+        <div class="fb-dist">◎ 230m · 借閱 / 交換</div>
+        <div class="fb-actions">
+          <button class="btn-borrow" onclick="showToast('已送出借閱申請 📮')">申請借閱</button>
+          <button class="btn-swap" onclick="showToast('已送出交換邀請 🔄')">提交換</button>
+        </div>
+      </div>
+    </div>
+    <div class="float-card">
+      <div class="fb-icon">🍃</div>
+      <div style="flex:1">
+        <div class="fb-name">瓦爾登湖</div>
+        <div class="fb-owner">書友：山野書客</div>
+        <div class="fb-dist">◎ 410m · 借閱</div>
+        <div class="fb-actions">
+          <button class="btn-borrow" onclick="showToast('已送出借閱申請 📮')">申請借閱</button>
+          <button class="btn-swap" onclick="showToast('已送出交換邀請 🔄')">提交換</button>
+        </div>
+      </div>
+    </div>
+    <div class="float-card">
+      <div class="fb-icon">☕</div>
+      <div style="flex:1">
+        <div class="fb-name">卡夫卡的海邊</div>
+        <div class="fb-owner">書友：文青咖啡控</div>
+        <div class="fb-dist">◎ 490m · 交換</div>
+        <div class="fb-actions">
+          <button class="btn-borrow" onclick="showToast('已送出借閱申請 📮')">申請借閱</button>
+          <button class="btn-swap" onclick="showToast('已送出交換邀請 🔄')">提交換</button>
+        </div>
+      </div>
+    </div>
+    <div class="sec-label">我的借出紀錄</div>
+    <div style="margin:0 20px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:.85rem;font-weight:700;color:var(--ink)">思考，快與慢</div><div style="font-size:.7rem;color:var(--ink3);margin-top:2px;font-style:italic">借出給：書蟲小葉</div></div>
+      <span style="background:#e8f0e4;color:var(--sage);font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:10px">借出中</span>
+    </div>
+  </div>
+
+  <!-- ══ DISCUSS ══ -->
+  <div class="screen" id="s-discuss">
+    <div class="disc-banner">
+      <div class="disc-cover">🌊</div>
+      <div>
+        <div class="disc-title">挪威的森林</div>
+        <div class="disc-sub">村上春樹 · 142 人正在討論</div>
+        <div class="anon-badge">◈ 匿名評論模式</div>
+      </div>
+    </div>
+    <div class="chapter-tabs">
+      <button class="ctab active">第一章</button>
+      <button class="ctab" onclick="switchCtab(this)">第二章</button>
+      <button class="ctab" onclick="switchCtab(this)">第三章</button>
+      <button class="ctab" onclick="switchCtab(this)">結局討論</button>
+      <button class="ctab" onclick="switchCtab(this)">全書心得</button>
+    </div>
+
+    <div class="comment-item">
+      <div class="c-top">
+        <div class="c-av">🕯</div>
+        <div class="c-name">讀者 · 其四十七</div>
+        <div class="c-time">5 分前</div>
+      </div>
+      <div class="c-text">直子說話的方式讓我想起了某個人——那種用沉默填滿空氣的感覺，村上處理得太真實了。</div>
+      <div class="c-acts">
+        <span class="c-act" onclick="likeComment(this)">♡ 12</span>
+        <span class="c-act" onclick="showToast('回覆此則')">↩ 回覆</span>
+      </div>
+    </div>
+    <div class="comment-item">
+      <div class="c-top">
+        <div class="c-av">🪶</div>
+        <div class="c-name">讀者 · 其八十三</div>
+        <div class="c-time">12 分前</div>
+      </div>
+      <span class="spoiler-tag">⚑ 防劇透</span>
+      <div class="c-text">第一章的草地場景，配合最後的呼應，會讓你覺得整本書是一個完整的圓。</div>
+      <div class="c-acts">
+        <span class="c-act" onclick="likeComment(this)">♡ 8</span>
+        <span class="c-act" onclick="showToast('回覆此則')">↩ 回覆</span>
+      </div>
+    </div>
+    <div class="comment-item">
+      <div class="c-top">
+        <div class="c-av">🌿</div>
+        <div class="c-name">讀者 · 其二十一</div>
+        <div class="c-time">1 小時前</div>
+      </div>
+      <div class="c-text">「死並非生的對立面，而是作為生的一部分永存。」每次讀都有不同的感觸。</div>
+      <div class="c-acts">
+        <span class="c-act" onclick="likeComment(this)">♡ 34</span>
+        <span class="c-act" onclick="showToast('回覆此則')">↩ 回覆</span>
+      </div>
+    </div>
+    <div style="padding:12px 20px">
+      <div style="background:var(--card);border:1.5px solid var(--border2);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="showToast('以匿名身份發表感想')">
+        <span style="font-size:.82rem;color:var(--ink3);flex:1;font-style:italic">以匿名身份留下感想…</span>
+        <span style="background:var(--accent);color:#faf7f2;font-size:.72rem;font-weight:700;padding:4px 13px;border-radius:8px;letter-spacing:.04em">送出</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MARATHON ══ -->
+  <div class="screen" id="s-marathon">
+    <div style="padding:14px 20px 0;font-size:.95rem;font-weight:700;color:var(--ink)">閱讀馬拉松</div>
+
+    <div class="marathon-hero">
+      <div class="mh-label">▸ 本週挑戰 · 我的小隊</div>
+      <div class="mh-book">《被討厭的勇氣》</div>
+      <div class="mh-prow"><span>整體進度</span><span style="color:var(--accent)">62%</span></div>
+      <div class="mh-track"><div class="mh-fill" style="width:62%"></div></div>
+      <div class="mh-dead">截止：週日 23:59 · 剩餘 2 天</div>
+      <div class="mh-mems">
+        <div class="mh-av">🙂</div>
+        <div class="mh-av">🌿</div>
+        <div class="mh-av">🔭</div>
+        <span class="mh-mname">你 · 書蟲小葉 · 山野書客</span>
+      </div>
+      <button class="mh-cta" onclick="showToast('今日打卡完成 ✦')">✦ 今日打卡</button>
+    </div>
+
+    <div class="sec-label">進行中的討論室</div>
+    <div class="room-card">
+      <div class="room-top">
+        <div class="room-name">《被討厭的勇氣》第三章</div>
+        <span class="room-live">直播</span>
+      </div>
+      <div class="room-book">主持：書蟲小葉 · 進行中</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:5px">
+          <div class="rm">🙂</div><div class="rm">📖</div><div class="rm">🎭</div><div class="rm">🌿</div>
+          <span style="font-size:.7rem;color:var(--ink3);align-self:center">+8</span>
+        </div>
+        <button class="join-btn" onclick="showToast('加入討論室')">加入</button>
+      </div>
+    </div>
+    <div class="room-card">
+      <div class="room-top">
+        <div class="room-name">《原子習慣》讀後感分享</div>
+        <span style="background:var(--card2);color:var(--ink3);font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--border2)">明日 20:00</span>
+      </div>
+      <div class="room-book">主持：哲學系阿涵</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:5px"><div class="rm">🪶</div><div class="rm">🌙</div></div>
+        <button class="join-btn" onclick="showToast('已預約提醒 🔔')">預約</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PROFILE ══ -->
+  <div class="screen" id="s-profile">
+    <div class="prof-top">
+      <div class="prof-av">📖</div>
+      <div class="prof-name">書海漫遊者</div>
+      <div class="prof-bio">喜愛哲學與心理學<br>每週至少讀一本書 · 喜歡下雨天</div>
+    </div>
+    <div class="prof-stats">
+      <div class="pstat"><div class="pstat-num">34</div><div class="pstat-label">藏書</div></div>
+      <div class="pstat"><div class="pstat-num">12</div><div class="pstat-label">書友</div></div>
+      <div class="pstat"><div class="pstat-num">28</div><div class="pstat-label">評論</div></div>
+      <div class="pstat"><div class="pstat-num">5</div><div class="pstat-label">馬拉松</div></div>
+    </div>
+    <div class="prof-sec">閱讀偏好</div>
+    <div class="pref-tags">
+      <span class="ptag">心理勵志</span><span class="ptag">哲學</span><span class="ptag">文學小說</span><span class="ptag">科普</span>
+    </div>
+    <div class="prof-sec">設定</div>
+    <div class="setting-row"><div class="sr-left"><span class="sr-icon">◎</span>開放鄰近探索</div><div class="toggle on" onclick="toggleSwitch(this)"></div></div>
+    <div class="setting-row"><div class="sr-left"><span class="sr-icon">◈</span>預設匿名評論</div><div class="toggle" onclick="toggleSwitch(this)"></div></div>
+    <div class="setting-row"><div class="sr-left"><span class="sr-icon">◷</span>馬拉松提醒</div><div class="toggle on" onclick="toggleSwitch(this)"></div></div>
+    <div class="setting-row" onclick="showToast('信用書緣：⬡⬡⬡⬡ 可信賴的書友')"><div class="sr-left"><span class="sr-icon">⬡</span>書緣信用</div><span style="color:var(--accent);font-size:.8rem;font-weight:700">⬡⬡⬡⬡</span></div>
+    <div class="setting-row" onclick="showToast('訂閱方案：閱讀者')"><div class="sr-left"><span class="sr-icon">◇</span>訂閱方案</div><span style="font-size:.78rem;color:var(--accent2);font-weight:600">閱讀者 ›</span></div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottomnav">
+    <div class="nav-item active" id="nav-discover" onclick="switchScreen('discover','以書會友')"><div class="ni">◉</div><div class="nl">探索</div></div>
+    <div class="nav-item" id="nav-shelf" onclick="switchScreen('shelf','我的書房')"><div class="ni">◫</div><div class="nl">書房</div></div>
+    <div class="nav-item" id="nav-float" onclick="switchScreen('float','漂書借閱')"><div class="ni">◎</div><div class="nl">漂書</div></div>
+    <div class="nav-item" id="nav-discuss" onclick="switchScreen('discuss','匿名討論')"><div class="ni">◌</div><div class="nl">討論</div></div>
+    <div class="nav-item" id="nav-marathon" onclick="switchScreen('marathon','閱讀馬拉松')"><div class="ni">◈</div><div class="nl">馬拉松</div></div>
+    <div class="nav-item" id="nav-profile" onclick="switchScreen('profile','書海漫遊者')"><div class="ni">◷</div><div class="nl">我的</div></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#faf7f2;padding:9px 20px;border-radius:20px;font-size:.78rem;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap;letter-spacing:.04em;font-family:'Noto Serif TC',serif"></div>
+
+<script>
+function switchScreen(id,title){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  document.getElementById("s-"+id).classList.add("active");
+  document.getElementById("nav-"+id).classList.add("active");
+  document.getElementById("headerTitle").textContent=title;
+}
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.style.opacity="1";t.style.transform="translateX(-50%) translateY(0)";
+  setTimeout(()=>{t.style.opacity="0";t.style.transform="translateX(-50%) translateY(10px)";},2200);
+}
+function switchStab(el){document.querySelectorAll(".stab").forEach(b=>b.classList.remove("active"));el.classList.add("active");}
+function switchCtab(el){document.querySelectorAll(".ctab").forEach(b=>b.classList.remove("active"));el.classList.add("active");}
+function toggleSwitch(el){el.classList.toggle("on");}
+function likeComment(el){const n=parseInt(el.textContent.replace(/\D/g,""));el.textContent="♥ "+(n+1);el.style.color="var(--rose)";}
+</script>
+</body>
+</html>
